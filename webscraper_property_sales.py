@@ -175,7 +175,8 @@ class Scraper():
         
         except Exception as e:
             # If there is no alert window, print exception
-            print("No alert popup present - ", e)  
+            print("No alert popup present - ", e) 
+        
 
     def __get_property_list(self) -> list:
         '''
@@ -300,9 +301,9 @@ class Scraper():
         #  TODO: change range to 5 pages
 
         # Iterate through loop to get property links form n pages - range(n)
-        for i in range(1):
+        for i in range(2):
             self.__get_property_list()
-            if i < 0:
+            if i < 1:
                 # todo next page - not clickable
                 pagination_xpath = "//li[@class='css-qhg1xn-PaginationItemPreviousAndNext-PaginationItemNext eaoxhri2']"
                 WebDriverWait(self.driver, self.delay).until(EC.element_to_be_clickable((By.XPATH, pagination_xpath))).click()
@@ -355,7 +356,7 @@ class Scraper():
     def download_property_images(self) -> None:
         '''
             This function is used to download images and save in the folder 
-            {property_id}/images.
+            raw_data/{property_id}/images.
         '''
         
         # Iterate through the property_list to get ID and image URL for download 
