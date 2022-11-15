@@ -7,12 +7,15 @@ from time import gmtime, strftime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.chrome.options import Options as ChromeOption
+from selenium.webdriver.firefox.options import Options as FirefoxOption
 
-def get_driver(url: str, browser: str="chrome") -> WebDriver:
+
+def get_driver(url: str, browser: str = "chrome") -> WebDriver:
     '''
         This function is used to open a url based on the browser.
 
@@ -23,22 +26,38 @@ def get_driver(url: str, browser: str="chrome") -> WebDriver:
         Returns:
             driver: webdriver.
     '''
-    # Set up chrome driver to get URL for scraping
+    # Set up driver to get URL for scraping
     browser = browser.lower()
     if browser == "safari":
+        # initializing webdriver for Safari with our options
+        # instance of Options class allows to configure Headless Safari
         driver = webdriver.Safari()
     elif browser == "firefox":
-        driver = webdriver.Firefox()
+        # initializing webdriver for Firefox with our options
+        # instance of Options class allows to configure Headless Firefox
+        options = FirefoxOption()
+        # this parameter tells Firefox that should be run without UI (Headless)
+        options.headless = True
+        options.add_argument("window-size=1920x1080")
+        driver = webdriver.Firefox(executable_path="./drivers/geckodriver", options=options)
     else:
-        driver = webdriver.Chrome()
-
-    driver.get(url)       
+        # initializing webdriver for Chrome with our options
+        # instance of Options class allows to configure Headless Chrome
+        options = ChromeOption()
+        # this parameter tells Chrome that should be run without UI (Headless)
+        options.headless = True
+        options.add_argument("window-size=1920x1080")
+        driver = webdriver.Chrome(executable_path="./drivers/chromedriver", options=options)
+    driver.get(url)
     time.sleep(5)
 
     return driver
 
+
 def create_data_folder(name: str) -> None:
+
     '''
+
         This function is used to create a folder in the current directory.
 
         Args:
@@ -48,7 +67,9 @@ def create_data_folder(name: str) -> None:
     if not os.path.exists(name):
         os.mkdir(name)
 
+
 class Scraper():
+
     '''
         This class is used to scrape web data.
 
@@ -63,6 +84,7 @@ class Scraper():
     '''
 
     def __init__(self, url: str, browser: str) -> None:
+
         '''
         This function is used to initialise variables for class object.
 
@@ -77,7 +99,9 @@ class Scraper():
         self.timestamp = 0
         self.image_src_list = list()
         self.property_list = list()
-    
+        self.data_folder = "raw_data"
+
+
     def __search_data(self) -> None:
         '''
             This function is used to scrape data based on filter selection.
@@ -145,6 +169,7 @@ class Scraper():
         WebDriverWait(self.driver, self.delay).until(EC.element_to_be_clickable((By.XPATH, update_xpath))).click()
         print("Filter Selection is done")
 
+
     def disable_popups(self) -> None:
         '''
             This function is used to clear alert and accept cookies.
@@ -176,7 +201,7 @@ class Scraper():
         except Exception as e:
             # If there is no alert window, print exception
             print("No alert popup present - ", e) 
-        
+
 
     def __get_property_list(self) -> list:
         '''
@@ -201,7 +226,9 @@ class Scraper():
         #  return list of property
         return self.property_url_list
     
+
     def __create_property_features(self) -> list:
+
         '''
             This function is used to scrape features of individual properties.
             Features - 
@@ -230,7 +257,7 @@ class Scraper():
 
             # Add Property Image (src link list) to the property_data_dict
             # __get_property_image_links function is called
-            self.__get_property_image_links()
+            self.__get_property_image_links(link, prop_id)
             # Image source list is added to the dictionary property_data_dict
             property_data_dict['Property Images'] = self.image_src_list
             # Ressetting image_src_list for next property features; 
@@ -288,15 +315,21 @@ class Scraper():
             # Append property_data_dict to the list property_list
             self.property_list.append(property_data_dict)
         return self.property_list    
-    
+
+
     def generate_data(self) -> None:
+
         '''
             This function is used to generate web scrapping data.
 
         '''
-
+        # TODO: disable.popups() needed due to test ?
+        # Clear cookies and popups
+        self.disable_popups()   
         # Call method to select filter criteria
         self.__search_data()
+        # Clear cookies and popups
+        self.disable_popups()   
 
         #  TODO: change range to 5 pages
 
@@ -314,57 +347,79 @@ class Scraper():
         # Call method to scrape features for each property 
         self.__create_property_features()
 
+
     def save_json_data(self) -> None:
+
         '''
             This function is used to save individual property features as data.json.
 
         '''
         # Create a folder by property id name
         for property in self.property_list:
-            if not os.path.exists(f"./raw_data/{property['Property ID']}"):
-                os.mkdir(f"./raw_data/{property['Property ID']}")
+            if not os.path.exists(f"./{self.data_folder}/{property['Property ID']}"):
+                os.mkdir(f"./{self.data_folder}/{property['Property ID']}")
 
             # Property data to be written from property_list
-            with open(f"./raw_data/{property['Property ID']}/data.json", "w") as outfile:
+            with open(f"./{self.data_folder}/{property['Property ID']}/data.json", "w") as outfile:
                 json.dump(property, outfile, indent=4)
 
-    def __get_property_image_links(self) -> list:
+
+    def __get_property_image_links(self, prop_url: str, prop_id: str) -> list:
+
         '''
             This function is used to get image source links for all the images of a 
             particular property and save it in image_src_list.
 
-            Returns:
+           Args:
+            prop_id(str): this string is property id
+            prop_url(str): thi string is property url
+           
+           Returns:
                 image_src_list (list): a list of image src links for a particular property
         '''
 
         # Scrape element using Selenium - all elements contaning <img> tag and src attribute
-        no_of_images_str = WebDriverWait(self.driver, self.delay).until(EC.presence_of_element_located((By.XPATH, "//*[@data-testid='gallery-counter']"))).text
-        no_of_images = int(no_of_images_str.split()[0].split('/')[1])
-        
-        # todo change range to no_of_images
+        try:
+            no_of_images_str = WebDriverWait(self.driver, self.delay).until(EC.presence_of_element_located((By.XPATH, "//*[@data-testid='gallery-counter']"))).text
+            no_of_images = int(no_of_images_str.split()[0].split('/')[1])
+            if no_of_images > 1:
+                # todo change range to len(no_of_images)
 
-        # Iterate through <li> tag to get image src links and append it to image_src_list
-        for _ in range(2): 
-            image_element = self.driver.find_element(By.XPATH, "//li[@aria-hidden='false' and @data-testid='gallery-image']")
-            image_src = image_element.find_element(by=By.TAG_NAME, value='img').get_attribute('src')
-            # Click next button to capture images
-            WebDriverWait(self.driver, self.delay).until(EC.element_to_be_clickable((By.XPATH, "//*[@data-testid='arrow_right']"))).click()
-            time.sleep(1)
-            self.image_src_list.append(image_src)
+                # Iterate through <li> tag to get image src links and append it to image_src_list
+                for _ in range(2): 
+                    image_element = self.driver.find_element(By.XPATH, "//li[@aria-hidden='false' and @data-testid='gallery-image']")
+                    image_src = image_element.find_element(by=By.TAG_NAME, value='img').get_attribute('src')
+                    self.image_src_list.append(image_src)
+                    # Click next button to capture images
+                    try:
+                        WebDriverWait(self.driver, self.delay).until(EC.element_to_be_clickable((By.XPATH, "//*[@data-testid='arrow_right']"))).click()
+                    except TimeoutException as e:
+                        print(f"Exception - {e.msg}")
+                    time.sleep(1)
+            else:
+                image_element = self.driver.find_element(By.XPATH, "//li[@aria-hidden='false' and @data-testid='gallery-image']")
+                image_src = image_element.find_element(by=By.TAG_NAME, value='img').get_attribute('src')
+                self.image_src_list.append(image_src)
+        except Exception as e:
+            print(f"No images available for the property: Property ID - {prop_id}, \
+                    Property Url - {prop_url}")
+
+            
         return self.image_src_list
 
+
     def download_property_images(self) -> None:
+
         '''
-            This function is used to download images and save in the folder 
-            raw_data/{property_id}/images.
+            This function is used to download images and save in the folder.
         '''
         
         # Iterate through the property_list to get ID and image URL for download 
         # Change the name of the image downloaded to include ID,timestamp and image order.
         for property in self.property_list:
             # Create an image folder in the property id folder
-            if not os.path.exists(f"./raw_data/{property['Property ID']}/images"):
-                os.mkdir(f"./raw_data/{property['Property ID']}/images")
+            if not os.path.exists(f"./{self.data_folder}/{property['Property ID']}/images"):
+                os.mkdir(f"./{self.data_folder}/{property['Property ID']}/images")
             # A variable to iterate through image order and concatenate it to the image name
             image_order=0
             # Iterate through links in the Property Images list to download
@@ -372,9 +427,10 @@ class Scraper():
             for image in range(len(property['Property Images'])): 
                 reponse = requests.get(property['Property Images'][image])
                 if reponse.status_code == 200:
-                    with open(f"raw_data/{property['Property ID']}/images/{strftime('%d%m%Y_%H%M%S', gmtime())}_{image_order+1}.jpg","wb") as file:
+                    with open(f"{self.data_folder}/{property['Property ID']}/images/{strftime('%d%m%Y_%H%M%S', gmtime())}_{image_order+1}.jpg","wb") as file:
                         file.write(reponse.content)
                 image_order +=1
+
 
 if __name__ == "__main__":
     # Create an instance of the Scraper
@@ -386,21 +442,23 @@ if __name__ == "__main__":
     web_scraper.disable_popups()
 
     # Method call to create the main raw_data folder
-    create_data_folder(name="raw_data")
+    data_folder_name = "raw_data"
+    create_data_folder(name=data_folder_name)
+    web_scraper.data_folder = data_folder_name
 
     # Method call for pagination and features capture
     web_scraper.generate_data()
 
-    print("pagination done")
+    print("Data generated.")
 
     # Method call to save json data for each property
     web_scraper.save_json_data()
 
-    print("json done")
+    print("Data saved - json")
 
     # Method call to save download images for each property
     web_scraper.download_property_images()
-    print("download done")
+    print("Property images downloaded.")
 
     # Wait time of 10 sec below closing the browser
     time.sleep(10)
