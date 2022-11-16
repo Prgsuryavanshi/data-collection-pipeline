@@ -172,29 +172,3 @@ def test_generate_data(browser,test_url):
 
     web_scraper.driver.close()
 
-'''
-class TestWebscraper(unittest.TestCase):
-    # Initialize the scenario for your test
-    def setUp(self):
-        test_url = "https://www.zoopla.co.uk/"
-        browser = "chrome"
-        web_scraper = ws.Scraper(test_url, browser)
-        property_test_data = {
-        "Property ID": "0000000",
-        "Timestamp": "2022-11-11 00:00:00",
-        "Property Images": [
-            "https://lid.zoocdn.com/u/2400/1800/c5a70908b088053d271794fc503b8da67b698250.jpg"
-        ],
-        "Price": "000,000",
-        "Address": "Coventry",
-        "Bedrooms": "0 beds",
-        "Bathroom": "0 baths",
-        "Reception": "0 reception",
-        "Description": " Test Description"
-        }
-
-    # Finish 
-    def tearDown(self):
-        web_scraper.driver.close()
-
-'''
