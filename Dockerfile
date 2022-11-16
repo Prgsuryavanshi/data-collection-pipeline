@@ -8,6 +8,7 @@ RUN apt-get clean && \
     apt install -y \
     wget \
     vim \
+    unzip \
     firefox \
     python3.10-dev \
     python3.10-distutils \
@@ -22,12 +23,17 @@ RUN mkdir datacollectionpipeline
 
 COPY webscraper_property_sales.py ./datacollectionpipeline/
 COPY requirements.txt ./datacollectionpipeline/
-COPY drivers ./datacollectionpipeline/drivers
+
 
 WORKDIR /root/datacollectionpipeline
+RUN mkdir drivers
 
 RUN python3 -m pip install -r requirements.txt
 RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 RUN apt-get install ./google-chrome-stable_current_amd64.deb -y
 
-#CMD ["python3", "webscarper_property_sales.py"]
+RUN wget https://chromedriver.storage.googleapis.com/107.0.5304.62/chromedriver_linux64.zip
+RUN unzip chromedriver_linux64.zip
+RUN mv chromedriver drivers/
+
+CMD ["python3", "webscarper_property_sales.py"]

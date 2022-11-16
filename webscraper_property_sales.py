@@ -47,6 +47,7 @@ def get_driver(url: str, browser: str = "chrome") -> WebDriver:
         # this parameter tells Chrome that should be run without UI (Headless)
         options.headless = True
         options.add_argument("window-size=1920x1080")
+        options.add_argument("--no-sandbox")
         driver = webdriver.Chrome(executable_path="./drivers/chromedriver", options=options)
     driver.get(url)
     time.sleep(5)
@@ -123,15 +124,15 @@ class Scraper():
 
         # Select max and min beds
         any_beds = self.driver.find_element(By.XPATH,"//*[@id='AnyBeds_testId']").click()
-        self.driver.find_element_by_xpath("//*[@id='beds_min']/option[text()='2']").click()
-        self.driver.find_element_by_xpath("//*[@id='beds_max']/option[text()='4']").click()
+        self.driver.find_element(By.XPATH, value = "//*[@id='beds_min']/option[text()='2']").click()
+        self.driver.find_element(By.XPATH, value = "//*[@id='beds_max']/option[text()='4']").click()
         price_xpath = "//*[@data-testid='any_price']"
         WebDriverWait(self.driver, self.delay).until(EC.presence_of_element_located((By.XPATH, price_xpath)))
 
         # Select max and min price
         any_price = self.driver.find_element(By.XPATH, value = "//*[@data-testid='any_price']").click()
-        self.driver.find_element_by_xpath("//*[@id='price_min']/option[text()='£140,000']").click()
-        self.driver.find_element_by_xpath("//*[@id='price_max']/option[text()='£350,000']").click()
+        self.driver.find_element(By.XPATH, value = "//*[@id='price_min']/option[text()='£140,000']").click()
+        self.driver.find_element(By.XPATH, value = "//*[@id='price_max']/option[text()='£350,000']").click()
         search_xpath = "//*[@data-testid='search-button']"
         WebDriverWait(self.driver, self.delay).until(EC.presence_of_element_located((By.XPATH, search_xpath)))
 
@@ -140,11 +141,11 @@ class Scraper():
         self.driver.find_element(By.XPATH, value = propertytype_xpath).click()
         
         # Select check boxes - Semi-detached, Detached, Terraced, Flats & Bunglows
-        self.driver.find_element_by_xpath("//*[@id='semi_detached-label']").click()
-        self.driver.find_element_by_xpath("//*[@id='flats']").click()
-        self.driver.find_element_by_xpath("//*[@id='detached']").click()
-        self.driver.find_element_by_xpath("//*[@id='terraced']").click()
-        self.driver.find_element_by_xpath("//*[@id='bungalow']").click()
+        self.driver.find_element(By.XPATH, value = "//*[@id='semi_detached-label']").click()
+        self.driver.find_element(By.XPATH, value = "//*[@id='flats']").click()
+        self.driver.find_element(By.XPATH, value = "//*[@id='detached']").click()
+        self.driver.find_element(By.XPATH, value = "//*[@id='terraced']").click()
+        self.driver.find_element(By.XPATH, value = "//*[@id='bungalow']").click()
 
         # Select filters to exclude - Retirements and Auction homes
         header_xpath = "//*[@data-testid='search-results-header_filters-button']"
@@ -171,6 +172,7 @@ class Scraper():
 
 
     def disable_popups(self) -> None:
+
         '''
             This function is used to clear alert and accept cookies.
         '''
@@ -245,7 +247,7 @@ class Scraper():
             property_data_dict = dict()
             # Get the URL using chromedriver
             self.driver.get(link)
-
+            time.sleep(1)
             # Add Property ID to the property_data_dict
             prop_id = link.split('details/')[1].split('/?search')[0]
             property_data_dict['Property ID'] = prop_id
@@ -323,25 +325,33 @@ class Scraper():
             This function is used to generate web scrapping data.
 
         '''
-        # TODO: disable.popups() needed due to test ?
         # Clear cookies and popups
-        self.disable_popups()   
+        try:
+            self.disable_popups()
+        except Exception as e:
+            print(f"Exception - {e.msg}")
         # Call method to select filter criteria
         self.__search_data()
         # Clear cookies and popups
-        self.disable_popups()   
-
-        #  TODO: change range to 5 pages
+        try:
+            self.disable_popups()
+        except Exception as e:
+            print(f"Exception - {e.msg}")   
 
         # Iterate through loop to get property links form n pages - range(n)
-        for i in range(2):
+        for i in range(5):
             self.__get_property_list()
-            if i < 1:
-                # todo next page - not clickable
+            if i < 4:
                 pagination_xpath = "//li[@class='css-qhg1xn-PaginationItemPreviousAndNext-PaginationItemNext eaoxhri2']"
-                WebDriverWait(self.driver, self.delay).until(EC.element_to_be_clickable((By.XPATH, pagination_xpath))).click()
+                try:
+                    WebDriverWait(self.driver, self.delay).until(EC.element_to_be_clickable((By.XPATH, pagination_xpath))).click()
+                except TimeoutException as e:
+                    print(f"Exception - {e.msg}")
                 time.sleep(2)
-                self.disable_popups()   
+                try:
+                    self.disable_popups()
+                except Exception as e:
+                    print(f"Exception - {e.msg}")                      
             else:
                 pass
         # Call method to scrape features for each property 
@@ -378,15 +388,14 @@ class Scraper():
                 image_src_list (list): a list of image src links for a particular property
         '''
 
-        # Scrape element using Selenium - all elements contaning <img> tag and src attribute
+        # Scrape element using Selenium - all elements containing <img> tag and src attribute
         try:
             no_of_images_str = WebDriverWait(self.driver, self.delay).until(EC.presence_of_element_located((By.XPATH, "//*[@data-testid='gallery-counter']"))).text
             no_of_images = int(no_of_images_str.split()[0].split('/')[1])
             if no_of_images > 1:
-                # todo change range to len(no_of_images)
 
                 # Iterate through <li> tag to get image src links and append it to image_src_list
-                for _ in range(2): 
+                for _ in range(no_of_images): 
                     image_element = self.driver.find_element(By.XPATH, "//li[@aria-hidden='false' and @data-testid='gallery-image']")
                     image_src = image_element.find_element(by=By.TAG_NAME, value='img').get_attribute('src')
                     self.image_src_list.append(image_src)

@@ -143,3 +143,6 @@ test_data/actual/**
 # Excluding
 .DS_Store
 test_data/*.png
+
+#  Excluding coverage report folder
+drivers/
