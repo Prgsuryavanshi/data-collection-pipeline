@@ -2,7 +2,7 @@ name: CI - Data Collection Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
     branches: [main]
     
@@ -27,6 +27,13 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install flake8 coverage
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          sudo apt-get clean && sudo apt update -y && sudo apt install wget firefox -y
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get install ./google-chrome-stable_current_amd64.deb -y
+          mkdir drivers
+          wget https://chromedriver.storage.googleapis.com/107.0.5304.62/chromedriver_linux64.zip
+          unzip chromedriver_linux64.zip
+          mv chromedriver drivers/
 
       - name: Static Code Linting with flake8
         run: |
@@ -35,7 +42,8 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv*
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=venv*
-      - name: Code coverage
-        run:
+      - name: Code test and coverage
+        run: |
           source ./venv-dcp/bin/activate
-          coverage report -m
+          # coverage report -m
+          pytest --cov -rA

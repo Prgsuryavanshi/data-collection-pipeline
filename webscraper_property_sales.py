@@ -319,10 +319,13 @@ class Scraper():
         return self.property_list    
 
 
-    def generate_data(self) -> None:
+    def generate_data(self, no_of_pages: int = 2) -> None:
 
         '''
             This function is used to generate web scrapping data.
+
+            Args:
+            no_of_pages (int): no of pages to scrape data from.
 
         '''
         # Clear cookies and popups
@@ -339,9 +342,9 @@ class Scraper():
             print(f"Exception - {e.msg}")   
 
         # Iterate through loop to get property links form n pages - range(n)
-        for i in range(5):
+        for i in range(no_of_pages):
             self.__get_property_list()
-            if i < 4:
+            if i < (no_of_pages-1):
                 pagination_xpath = "//li[@class='css-qhg1xn-PaginationItemPreviousAndNext-PaginationItemNext eaoxhri2']"
                 try:
                     WebDriverWait(self.driver, self.delay).until(EC.element_to_be_clickable((By.XPATH, pagination_xpath))).click()
@@ -367,7 +370,7 @@ class Scraper():
         # Create a folder by property id name
         for property in self.property_list:
             if not os.path.exists(f"./{self.data_folder}/{property['Property ID']}"):
-                os.mkdir(f"./{self.data_folder}/{property['Property ID']}")
+                os.makedirs(f"./{self.data_folder}/{property['Property ID']}")
 
             # Property data to be written from property_list
             with open(f"./{self.data_folder}/{property['Property ID']}/data.json", "w") as outfile:
@@ -456,7 +459,8 @@ if __name__ == "__main__":
     web_scraper.data_folder = data_folder_name
 
     # Method call for pagination and features capture
-    web_scraper.generate_data()
+    no_of_pages = 2
+    web_scraper.generate_data(no_of_pages)
 
     print("Data generated.")
 
