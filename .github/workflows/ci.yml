@@ -2,7 +2,7 @@ name: CI - Data Collection Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
     branches: [main]
     
@@ -27,6 +27,13 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install flake8 coverage
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          apt-get clean && apt update -y && apt install wget -y
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          apt-get install ./google-chrome-stable_current_amd64.deb -y
+          mkdir drivers
+          wget https://chromedriver.storage.googleapis.com/107.0.5304.62/chromedriver_linux64.zip
+          unzip chromedriver_linux64.zip
+          mv chromedriver drivers/
 
       - name: Static Code Linting with flake8
         run: |
@@ -39,3 +46,4 @@ jobs:
         run:
           source ./venv-dcp/bin/activate
           coverage report -m
+          pytest --cov -rA
