@@ -45,5 +45,5 @@ jobs:
       - name: Code coverage
         run: |
           source ./venv-dcp/bin/activate
-          coverage report -m
+          # coverage report -m
           pytest --cov -rA
