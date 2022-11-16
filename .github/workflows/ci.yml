@@ -27,9 +27,9 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install flake8 coverage
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          apt-get clean && apt update -y && apt install wget -y
+          sudo apt-get clean && sudo apt update -y && sudo apt install wget -y
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          apt-get install ./google-chrome-stable_current_amd64.deb -y
+          sudo apt-get install ./google-chrome-stable_current_amd64.deb -y
           mkdir drivers
           wget https://chromedriver.storage.googleapis.com/107.0.5304.62/chromedriver_linux64.zip
           unzip chromedriver_linux64.zip
