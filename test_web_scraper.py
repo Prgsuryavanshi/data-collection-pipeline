@@ -26,7 +26,7 @@ def test_create_data_folder(folder_name):
     # Remove the folder after test
     os.rmdir(folder_name)
 
-@pytest.mark.parametrize("browser", ["chrome", "safari", "firefox"])
+@pytest.mark.parametrize("browser", ["chrome", "firefox"])
 @pytest.mark.parametrize("test_url", ["https://www.google.com/"])
 def test_get_driver(browser,test_url):
     '''
@@ -162,7 +162,7 @@ def test_generate_data(browser,test_url):
     '''
     web_scraper = ws.Scraper(test_url, browser)
 
-    web_scraper.generate_data()
+    web_scraper.generate_data(1)
     # Get the length of property_list and property_url_list
     len_of_list = len(web_scraper.property_list)
     len_of_url_list = len(web_scraper.property_url_list)
